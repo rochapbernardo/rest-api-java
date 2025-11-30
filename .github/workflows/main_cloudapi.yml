@@ -22,14 +22,13 @@ jobs:
 
       - name: Build with Maven
         run: |
-          cd crud-server
-          mvn -B package -DskipTests --file pom.xml
+          mvn -B package -DskipTests
 
       - name: Upload artifact for deploy
         uses: actions/upload-artifact@v4
         with:
           name: java-app
-          path: crud-server/target/*.jar
+          path: target/*.jar
 
   deploy:
     runs-on: ubuntu-latest
@@ -46,7 +45,8 @@ jobs:
         with:
           app-name: cloudApi
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISH_PROFILE }}
-          package: 'rest-api-java/crud-server/target/*.jar'
+          package: '*.jar'
+
 
 
 
