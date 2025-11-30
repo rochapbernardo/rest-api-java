@@ -1,7 +1,4 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/azure/functions-action
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy Java project to Azure Function App - cloudApi
+name: Build and deploy Java app to Azure Web App - cloudApi
 
 on:
   push:
@@ -10,46 +7,47 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_NAME: cloudApi # set this to your function app name on Azure
-  PACKAGE_DIRECTORY: '.' # set this to the directory which contains pom.xml file
-  JAVA_VERSION: '17' # set this to the java version to use
+  APP_NAME: cloudApi                   # nome do Web App na Azure
+  JAVA_VERSION: '17'
+  PACKAGE_DIRECTORY: '.'
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
 
     steps:
-      - name: 'Checkout GitHub Action'
+      - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Setup Java SDK ${{ env.JAVA_VERSION }}
+      - name: Set up Java
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
 
-      - name: 'Restore Project Dependencies Using Mvn'
-        shell: pwsh
+      - name: Build with Maven
         run: |
-          pushd './${{ env.PACKAGE_DIRECTORY }}'
-          mvn clean package
-          popd
-      
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_1A064C9005794445B15D219589B61D72 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_969C755E7D56443EB41795556F796C15 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_BBF91B8DECF54DC1BC99A0C319EE0C1F }}
+          mvn -ntp -q clean package -DskipTests
 
-      - name: 'Run Azure Functions Action'
-        uses: Azure/functions-action@v1
-        id: fa
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          app-name: 'cloudApi'
-          slot-name: 'Production'
-          package: '${{ env.PACKAGE_DIRECTORY }}'
-          respect-pom-xml: true
+          name: java-artifact
+          path: target/*.jar
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: java-artifact
+
+      - name: Deploy to Azure WebApp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.APP_NAME }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
+          package: "*.jar"
