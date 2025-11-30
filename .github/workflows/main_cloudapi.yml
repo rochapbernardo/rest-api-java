@@ -46,7 +46,8 @@ jobs:
         with:
           app-name: cloudApi
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISH_PROFILE }}
-          package: 'crud-server/target/*.jar'
+          package: './app/*.jar'
+
 
 
 
