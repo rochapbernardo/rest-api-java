@@ -2,7 +2,8 @@ name: Build and deploy JAR app to Azure Web App - cloudApi
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -12,22 +13,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Java version
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'microsoft'
 
       - name: Build with Maven
-        run: |
-          cd crud-server
-          mvn -B clean install -DskipTests
+        working-directory: ./crud-server
+        run: mvn clean install -DskipTests
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: java-app
-          path: 'crud-server/target/*.jar'
+          path: crud-server/target/*.jar
 
   deploy:
     runs-on: ubuntu-latest
@@ -38,17 +38,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: java-app
-      
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_CE1455EECDD84C60B33CC77FB70069D9 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_6317A8EE41DE4790A24A82E90B3AC44E }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_89FEC28B2490435F8354A1BF66866F43 }}
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'cloudApi'
-          slot-name: 'Production'
           package: '*.jar'
+          # ou se você usa publish profile
+          # publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISH_PROFILE }}
